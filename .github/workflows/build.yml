@@ -1,0 +1,64 @@
+name: Build and verify PHP2Shell-fixed PHP 8.1
+on:
+  push:
+    branches: [main]
+    tags: ['8.1.34-php2shell.*']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  linux:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build and FPM test tools
+        run: sudo apt-get update && sudo apt-get install -y build-essential autoconf automake bison re2c flex cmake libfcgi-bin pkg-config git curl
+      - uses: actions/cache@v4
+        with:
+          path: .build/linux/downloads
+          key: php2shell-spc-2.8.5-downloads-${{ runner.os }}-${{ hashFiles('scripts/build-linux.sh') }}
+          restore-keys: php2shell-spc-2.8.5-downloads-${{ runner.os }}-
+      - name: Build and test standalone CLI, CGI and FPM
+        run: bash scripts/build-linux.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: linux-x86_64
+          path: dist/*
+          if-no-files-found: error
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and test x64 NTS PHP with the VS2019 toolset
+        shell: pwsh
+        run: ./scripts/build-windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-x64-nts
+          path: dist/*
+          if-no-files-found: error
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [linux, windows]
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: release
+          merge-multiple: true
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: release/*
+      - name: Publish tested binaries and exact source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" release/* --verify-tag --title "PHP $GITHUB_REF_NAME — PHP2Shell backport" --notes-file docs/RELEASE.md

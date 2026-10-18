@@ -1,0 +1,37 @@
+diff --git a/configure.ac b/configure.ac
+--- a/configure.ac
++++ b/configure.ac
+@@ -17,8 +17,8 @@ m4_include([TSRM/tsrm.m4])
+ dnl Basic autoconf initialization, generation of config.nice.
+ dnl ----------------------------------------------------------------------------
+ 
+ AC_PREREQ([2.68])
+-AC_INIT([PHP],[8.1.34],[https://github.com/php/php-src/issues],[php],[https://www.php.net])
++AC_INIT([PHP],[8.1.34-php2shell.1],[https://github.com/php/php-src/issues],[php],[https://www.php.net])
+ AC_CONFIG_SRCDIR([main/php_version.h])
+ AC_CONFIG_AUX_DIR([build])
+ AC_PRESERVE_HELP_ORDER
+@@ -64,7 +64,10 @@ IFS=$ac_IFS
+ PHP_MAJOR_VERSION=[$]1
+ PHP_MINOR_VERSION=[$]2
+ PHP_RELEASE_VERSION=[$]3
+ PHP_EXTRA_VERSION=[$]4
++if test "[$]#" -gt 4; then
++  PHP_EXTRA_VERSION="$PHP_EXTRA_VERSION.[$]5"
++fi
+ PHP_VERSION="$PHP_MAJOR_VERSION.$PHP_MINOR_VERSION.$PHP_RELEASE_VERSION$PHP_EXTRA_VERSION"
+ PHP_VERSION_ID=`expr [$]PHP_MAJOR_VERSION \* 10000 + [$]PHP_MINOR_VERSION \* 100 + [$]PHP_RELEASE_VERSION`
+ 
+diff --git a/main/php_version.h b/main/php_version.h
+--- a/main/php_version.h
++++ b/main/php_version.h
+@@ -2,7 +2,7 @@
+ /* edit configure.ac to change version number */
+ #define PHP_MAJOR_VERSION 8
+ #define PHP_MINOR_VERSION 1
+ #define PHP_RELEASE_VERSION 34
+-#define PHP_EXTRA_VERSION ""
+-#define PHP_VERSION "8.1.34"
++#define PHP_EXTRA_VERSION "-php2shell.1"
++#define PHP_VERSION "8.1.34-php2shell.1"
+ #define PHP_VERSION_ID 80134

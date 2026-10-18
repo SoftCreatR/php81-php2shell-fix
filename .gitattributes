@@ -1,0 +1,9 @@
+*.sh text eol=lf
+*.php text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+# The pinned upstream patch must retain its exact bytes for SHA-256 verification.
+*.patch -text

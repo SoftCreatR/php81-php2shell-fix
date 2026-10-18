@@ -1,0 +1,14 @@
+{
+  "version": "8.1.34-php2shell.1",
+  "phpVersionId": 80134,
+  "phpModuleApi": 20210902,
+  "zendExtensionApi": 420210902,
+  "upstreamBase": "8.1.34",
+  "baseCommit": "94abff74457effe4432f0bd49f5230aa11155dff",
+  "securityCommit": "1d7dec178a094e6e75b229ce22754045f8c6070a",
+  "securityPatchSha256": "c85ad0fddcbff7f2318617eeaa54d271135463b5bf70a01228447e3ed78de96e",
+  "cves": ["CVE-2026-109618", "CVE-2026-109619"],
+  "scope": "Only the PHP security team's PHP 8.1 PHP2Shell backport; not general PHP 8.1 security support",
+  "source": "https://github.com/php/php-src",
+  "localChanges": ["patches/version.patch"]
+}
