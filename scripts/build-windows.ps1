@@ -27,6 +27,9 @@ $archive = Get-ChildItem -LiteralPath (Join-Path $source 'x64\Release') -Filter 
     Where-Object { $_.Name -like "php-$Version-nts-*" -and $_.Name -notmatch 'debug|devel|test' } |
     Select-Object -First 1
 if (-not $archive) { throw 'The tested PHP runtime archive was not generated.' }
+$packageTestRoot = Join-Path $BuildRoot ('package-test-' + [Guid]::NewGuid().ToString('N'))
+Expand-Archive -LiteralPath $archive.FullName -DestinationPath $packageTestRoot
+& (Join-Path $recipeRoot 'tests\windows-runtime.ps1') -PhpRoot $packageTestRoot -Version $Version -Packaged
 $dist = Join-Path $recipeRoot 'dist'
 New-Item -ItemType Directory -Force -Path $dist | Out-Null
 $target = Join-Path $dist "php-$Version-nts-windows-x64.zip"

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+trap 'printf "Linux build failed at script line %s\n" "$LINENO" >&2' ERR
 RECIPE_ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 BUILD_ROOT="${BUILD_ROOT:-${RECIPE_ROOT}/.build/linux}"
 OUTPUT_ROOT="${RECIPE_ROOT}/dist"
@@ -16,8 +17,17 @@ fi
 ./spc download --with-php=8.1.34 --ignore-cache-sources=php-src --for-extensions="${EXTENSIONS}" --for-libs=freetype,libjpeg,libwebp --without-suggestions --no-interaction
 ./spc build --build-cli --build-cgi --build-fpm --with-added-patch="${RECIPE_ROOT}/scripts/spc-patch.php" --with-libs=freetype,libjpeg,libwebp --no-interaction "${EXTENSIONS}"
 PHP="${BUILD_ROOT}/buildroot/bin/php"
-test "$("${PHP}" -n -r 'echo PHP_VERSION;')" = "${PHP_BUILD_VERSION}"
+if ! actual_version="$("${PHP}" -n -r 'echo PHP_VERSION;')"; then
+  printf 'The compiled PHP could not report its version. Output: %s\n' "${actual_version}" >&2
+  exit 1
+fi
+printf 'Runtime identity: expected=%s actual=%s\n' "${PHP_BUILD_VERSION}" "${actual_version}"
+if [[ "${actual_version}" != "${PHP_BUILD_VERSION}" ]]; then
+  echo 'The compiled PHP version does not match the requested build identity.' >&2
+  exit 1
+fi
 "${PHP}" -n "${RECIPE_ROOT}/tests/runtime.php"
+"${PHP}" -n "${RECIPE_ROOT}/tests/source-patch-context.php" "${BUILD_ROOT}/downloads/php-8.1.34.tar.xz"
 for binary in php php-cgi php-fpm; do
   test -x "buildroot/bin/${binary}"
   if readelf -l "buildroot/bin/${binary}" | grep -q 'Requesting program interpreter'; then

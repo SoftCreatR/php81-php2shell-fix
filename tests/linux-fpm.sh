@@ -18,10 +18,25 @@ FPM_PID=$!
 for _ in $(seq 1 100); do [[ -S "${TEST_ROOT}/fpm.sock" ]] && break; sleep 0.1; done
 test -S "${TEST_ROOT}/fpm.sock"
 command -v cgi-fcgi >/dev/null
-request() { SCRIPT_FILENAME="${TEST_ROOT}/request.php" REQUEST_METHOD=GET QUERY_STRING="${1:-}" cgi-fcgi -bind -connect "${TEST_ROOT}/fpm.sock"; }
+request() { SCRIPT_FILENAME="${TEST_ROOT}/request.php" REQUEST_METHOD=GET QUERY_STRING="${1:-}" timeout 15s cgi-fcgi -bind -connect "${TEST_ROOT}/fpm.sock"; }
 for _ in $(seq 1 5); do
   request | grep -q "${PHP_BUILD_VERSION}"
-  request oom=1 > "${TEST_ROOT}/oom-response.txt"
+  # The backport may terminate the exhausted worker, so FastCGI can report an
+  # application error or connection reset. Require a NEW memory-limit error
+  # for every cycle, followed by a successful request, instead of exit status 0.
+  memory_errors_before=$(grep -Ec 'Allowed memory size of .* exhausted' "${TEST_ROOT}/error.log" || true)
+  oom_status=0
+  request oom=1 > "${TEST_ROOT}/oom-response.txt" || oom_status=$?
+  for _ in $(seq 1 50); do
+    memory_errors_after=$(grep -Ec 'Allowed memory size of .* exhausted' "${TEST_ROOT}/error.log" || true)
+    (( memory_errors_after > memory_errors_before )) && break
+    sleep 0.1
+  done
+  if (( memory_errors_after <= memory_errors_before || oom_status == 124 || oom_status == 137 )); then
+    echo "Expected a bounded PHP memory-limit error (FastCGI status: ${oom_status})" >&2
+    cat "${TEST_ROOT}/oom-response.txt" "${TEST_ROOT}/error.log" >&2
+    exit 1
+  fi
   request | grep -q "${PHP_BUILD_VERSION}"
 done
 if grep -Eqi 'segfault|SIGSEGV|SIGBUS|core dumped' "${TEST_ROOT}/error.log"; then

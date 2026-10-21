@@ -1,0 +1,4 @@
+[
+  "bcmath", "ctype", "curl", "dom", "exif", "fileinfo", "gd", "gmp", "intl",
+  "mbstring", "mysqli", "openssl", "pdo_mysql", "session", "xml", "zip", "zlib"
+]
